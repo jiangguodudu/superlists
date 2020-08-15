@@ -45,12 +45,24 @@ class NewVistorTest(unittest.TestCase):
         time.sleep(2)
 
         table = self.driver.find_element_by_id("id_list_table")
-        rows = table.find_element_by_tag_name('tr')
+        rows = table.find_elements_by_tag_name('tr')
         self.assertTrue(
             any(row.text == '1: Buy a peacock feathers' for row in rows)
         )
 
-        self.fail("finish the test!")
+        # 文本框再次输入其他待办事项
+        # 输入"Use peacock feathers to make a fly"
+        input_box = self.driver.find_element_by_id('id_new_item')
+        input_box.send_keys("Use peacock feathers to make a fly")
+        input_box.send_keys(Keys.ENTER)
+
+        # 页面再次更新，清单中显示两个待办事项
+        table = self.driver.find_element_by_id("id_list_table")
+        rows = table.find_elements_by_tag_name('tr')
+        self.assertIn("2: Use peacock feathers to make a fly",
+                      [row.text for row in rows])
+
+        # self.fail("finish the test!")
 
 
 if __name__ == '__main__':
