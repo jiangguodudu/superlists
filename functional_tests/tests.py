@@ -73,3 +73,45 @@ class NewVistorTest(LiveServerTestCase):
         self.wait_for_row_in_list_table("2: Use peacock feathers to make a fly")
 
         # self.fail("finish the test!")
+
+    def test_multiple_users_can_start_lists_at_different_urls(self):
+        # jane新建一个待办事项清单
+        self.driver.get(self.live_server_url)
+        input_box = self.driver.find_element_by_id('id_new_item')
+        # 输入"Buy a peacock feathers"
+        input_box.send_keys("Buy a peacock feathers")
+
+        # 按下回车键，页面更新
+        # 待办事项列表显示“1: Buy a peacock feathers”
+        input_box.send_keys(Keys.ENTER)
+        self.wait_for_row_in_list_table('1: Buy a peacock feathers')
+
+        # 清单有一个唯一的URL
+        edith_list_url = self.driver.current_url
+        self.assertRegex(edith_list_url, '/lists/.+')
+
+        # 康康访问了网站
+        # 使用了一个新的浏览器会话
+        # 确保jane的信息不回从cookie中泄漏
+        self.driver.quit()
+        self.browser = webdriver.Chrome()
+
+        # kangkang访问了首页
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name("body").text
+        self.assertNotIn("Buy a peacock feathers", page_text)
+        self.assertNotIn("make a fly", page_text)
+
+        input_box = self.browser.find_element_by_id('id_new_item')
+        # 输入"Buy a peacock feathers"
+        input_box.send_keys("Buy milk")
+
+        # 按下回车键，页面更新
+        # 待办事项列表显示“1: Buy a peacock feathers”
+        input_box.send_keys(Keys.ENTER)
+        self.wait_for_row_in_list_table('1: Buy milk')
+
+        # 清单有一个唯一的URL
+        francil_list_url = self.browser.current_url
+        self.assertRegex(francil_list_url, '/lists/.+')
+        self.assertNotEqual(francil_list_url, edith_list_url)
