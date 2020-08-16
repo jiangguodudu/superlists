@@ -7,17 +7,34 @@
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import WebDriverException
 
 from django.test import LiveServerTestCase
 
 
 class NewVistorTest(LiveServerTestCase):
 
+    MAX_WAIT = 10
+
     def setUp(self):
         self.driver = webdriver.Chrome()
 
     def tearDown(self):
         self.driver.quit()
+
+    def wait_for_row_in_list_table(self, row_text):
+        """显式等待并校验"""
+        start_time = time.time()
+        while True:
+            try:
+                table = self.driver.find_element_by_id("id_list_table")
+                rows = table.find_elements_by_tag_name("tr")
+                self.assertIn(row_text, [row.text for row in rows])
+                return
+            except (AssertionError, WebDriverException) as e:
+                if time.time() - start_time > NewVistorTest.MAX_WAIT:
+                    raise e
+                time.sleep(0.5)
 
     def test_can_start_a_list_and_retieve_it_later(self):
         # 打开应用首页
@@ -44,11 +61,7 @@ class NewVistorTest(LiveServerTestCase):
         input_box.send_keys(Keys.ENTER)
         time.sleep(2)
 
-        table = self.driver.find_element_by_id("id_list_table")
-        rows = table.find_elements_by_tag_name('tr')
-        self.assertTrue(
-            any(row.text == '1: Buy a peacock feathers' for row in rows)
-        )
+        self.wait_for_row_in_list_table('1: Buy a peacock feathers')
 
         # 文本框再次输入其他待办事项
         # 输入"Use peacock feathers to make a fly"
@@ -57,9 +70,6 @@ class NewVistorTest(LiveServerTestCase):
         input_box.send_keys(Keys.ENTER)
 
         # 页面再次更新，清单中显示两个待办事项
-        table = self.driver.find_element_by_id("id_list_table")
-        rows = table.find_elements_by_tag_name('tr')
-        self.assertIn("2: Use peacock feathers to make a fly",
-                      [row.text for row in rows])
+        self.wait_for_row_in_list_table("2: Use peacock feathers to make a fly")
 
         # self.fail("finish the test!")
